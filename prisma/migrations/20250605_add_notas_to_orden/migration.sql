@@ -1,0 +1,1 @@
+-- No-op: columna "notas" ya aplicada mediante prisma db push

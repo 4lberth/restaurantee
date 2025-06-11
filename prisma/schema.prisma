@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ————————————— MODELOS ————————————— */
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       Rol
+  createdAt DateTime @default(now())
+
+  // ⬅️ lado 1-a-N: un mozo atiende muchas órdenes
+  ordenesAtendidas Orden[] @relation("MozoOrden")
+}
+
+model Mesa {
+  id      Int        @id @default(autoincrement())
+  numero  Int        @unique
+  estado  EstadoMesa @default(libre)
+  ordenes Orden[]
+}
+
+model Categoria {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique
+  platos Plato[]
+}
+
+model Plato {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  descripcion String
+  precio      Float
+  categoriaId Int?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
+  detalles    DetalleOrden[]
+}
+
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  dni       String
+  telefono  String
+  ordenes   Orden[]
+  facturas  Factura[]
+}
+
+model Orden {
+  id        Int        @id @default(autoincrement())
+  total     Float
+  estado    EstadoOrden @default(pendiente)
+  notas     String?    @db.Text
+  createdAt DateTime   @default(now())
+
+  // Relaciones
+  mesaId   Int?
+  mesa     Mesa?    @relation(fields: [mesaId], references: [id])
+
+  clienteId Int?
+  cliente   Cliente? @relation(fields: [clienteId], references: [id])
+
+  mozoId   Int?
+  mozo     User?    @relation("MozoOrden", fields: [mozoId], references: [id])
+
+  detalles DetalleOrden[]
+  factura  Factura?
+}
+
+
+
+model DetalleOrden {
+  id       Int   @id @default(autoincrement())
+  ordenId  Int
+  platoId  Int
+  cantidad Int
+  subtotal Float
+
+  orden  Orden @relation(fields: [ordenId], references: [id])
+  plato  Plato @relation(fields: [platoId], references: [id])
+
+  @@index([platoId])
+  @@index([ordenId])
+}
+
+model Factura {
+  id            Int       @id @default(autoincrement())
+  ordenId       Int       @unique
+  clienteId     Int
+  subtotal      Float
+  descuento     Float       @default(0)
+  tipoDescuento TipoDescuento @default(porcentaje)
+  propina       Float       @default(0)
+  totalFinal    Float
+  creadoEn      DateTime    @default(now())
+
+  orden   Orden   @relation(fields: [ordenId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@index([creadoEn])
+}
+
+/* ————————————— ENUMS ————————————— */
+
+enum TipoDescuento {
+  porcentaje
+  monto
+}
+
+enum Rol {
+  admin
+  mozo
+  cocina
+}
+
+enum EstadoMesa {
+  libre
+  ocupada
+}
+
+enum EstadoOrden {
+  pendiente
+  en_preparacion
+  listo
+  servido
+  cancelada
+}
