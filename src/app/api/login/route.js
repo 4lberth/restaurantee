@@ -1,3 +1,4 @@
+// src/app/api/login/route.js
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -15,14 +16,13 @@ export async function POST(req) {
     { expiresIn: process.env.JWT_EXPIRES_IN }
   );
 
-  const res = NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true, rol: user.rol });  // 👈 devolvemos rol
   res.cookies.set('token', token, {
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 7,
     path: '/',
     sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
   });
-
   return res;
 }
