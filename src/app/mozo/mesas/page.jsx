@@ -1,31 +1,31 @@
+// src/app/mozo/mesas/page.jsx
 'use client';
 import { useEffect, useState } from 'react';
-import { listarMesas, crearOrden } from '@/lib/api/mozo';
+import { listarMesas } from '@/lib/api/mozo';
+import CreateOrderModal from '@/components/CreateOrderModal';  // ⬅️ modal con el formulario
 
 export default function MesasMozo() {
-  const [mesas, setMesas]   = useState([]);
-  const [loading, setLoad]  = useState(true);
-  const [cliente, setCli]   = useState('');          // opcional
-  const [error, setErr]     = useState('');
+  const [mesas, setMesas] = useState([]);
+  const [loading, setLoad] = useState(true);
+  const [error, setErr] = useState('');
+  const [mesaSel, setSel] = useState(null);      // mesa seleccionada para crear orden
 
+  /* cargar mesas */
   useEffect(() => {
     (async () => {
-      try { setMesas(await listarMesas()); }
-      catch (e){ setErr(e.message); }
+      try {
+        setMesas(await listarMesas());
+      } catch (e) {
+        setErr(e.message);
+      }
       setLoad(false);
     })();
   }, []);
 
-  const iniciarOrden = async (m) => {
-    try {
-      await crearOrden({
-        mesaId: m.id,
-        clienteId: cliente || null,
-        items: [],               // se podrán agregar luego
-        notas: ''
-      });
-      location.href = '/mozo/ordenes';   // ir a la lista
-    } catch (e){ alert(e.message); }
+  /* cerrar modal */
+  const closeModal = (ordenCreada) => {
+    setSel(null);
+    if (ordenCreada) location.href = '/mozo/ordenes';  // ir a la lista de órdenes
   };
 
   if (loading) return <p>Cargando…</p>;
@@ -37,20 +37,25 @@ export default function MesasMozo() {
       {error && <p className="text-red-500">{error}</p>}
 
       <div className="grid grid-cols-4 gap-4">
-        {mesas.map(m => (
+        {mesas.map((m) => (
           <button
             key={m.id}
             disabled={m.estado !== 'libre'}
-            onClick={() => iniciarOrden(m)}
+            onClick={() => setSel(m)}                        
             className={`h-24 rounded-lg flex items-center justify-center
-              ${m.estado === 'libre'
-                ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'bg-slate-700 opacity-50 cursor-not-allowed'}`}
+              ${
+                m.estado === 'libre'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-slate-700 opacity-50 cursor-not-allowed'
+              }`}
           >
             Mesa {m.numero}
           </button>
         ))}
       </div>
+
+      {/* modal para crear la orden */}
+      {mesaSel && <CreateOrderModal mesa={mesaSel} onClose={closeModal} />}
     </div>
   );
 }

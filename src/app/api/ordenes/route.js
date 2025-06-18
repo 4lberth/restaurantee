@@ -12,19 +12,17 @@ export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async () => {
 });
 
 /* ─── POST /api/ordenes ─── (solo mozo) */
+/* ─── POST /api/ordenes ─── (solo mozo) */
 export const POST = requireAuth(['mozo'])(async (request) => {
-  const mozoId = request.user.userId;               // ← puesto por middleware
-  const { mesaId, clienteId, items, notas } = await request.json();
+  const mozoId = request.user.userId;
+  const { mesaId, clienteId, items = [], notas } = await request.json(); // ← items por defecto []
 
-  if (!items?.length)
-    return NextResponse.json({ error: 'items vacío' }, { status: 400 });
-
-  /* 1. Verificar que la mesa exista y esté libre */
+  /* 1. Verificar mesa libre */
   const mesa = await prisma.mesa.findUnique({ where: { id: mesaId } });
   if (!mesa || mesa.estado === 'ocupada')
     return NextResponse.json({ error: 'Mesa ocupada o inexistente' }, { status: 409 });
 
-  /* 2. Construir detalles con verificación de platos */
+  /* 2. Si hay items, validarlos */
   const detalles = [];
   for (const it of items) {
     const plato = await prisma.plato.findUnique({ where: { id: it.platoId } });
@@ -40,22 +38,22 @@ export const POST = requireAuth(['mozo'])(async (request) => {
     });
   }
 
-  const total = calcularTotal(detalles);
+  const total = detalles.length ? calcularTotal(detalles) : 0;
 
-  /* 3. Crear la orden */
+  /* 3. Crear orden */
   const orden = await prisma.orden.create({
     data: {
       total,
       notas,
       mozo:    { connect: { id: mozoId } },
       mesa:    { connect: { id: mesaId } },
-      cliente: { connect: { id: clienteId } },
-      detalles: { createMany: { data: detalles } }
+      cliente: clienteId ? { connect: { id: clienteId } } : undefined,
+      ...(detalles.length && { detalles: { createMany: { data: detalles } } })
     },
     include: { detalles: true, mozo: true, mesa: true, cliente: true }
   });
 
-  /* 4. Cambiar mesa a ocupada */
+  /* 4. Marcar mesa ocupada */
   await prisma.mesa.update({ where: { id: mesaId }, data: { estado: 'ocupada' } });
 
   return NextResponse.json(orden, { status: 201 });

@@ -2,37 +2,27 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-// PUT /api/platos/:id  ──────── (admin)
+/* PUT ─ editar plato */
 export const PUT = requireAuth(['admin'])(async (request, { params }) => {
-  const body = await request.json();          // { nombre, descripcion, precio }
+  const body = await request.json();
   const id = Number(params.id);
 
   try {
-    const plato = await prisma.plato.update({
-      where: { id },
-      data:  body,
-    });
-
-    return NextResponse.json(plato);          // 200 OK
-  } catch (err) {
-    return NextResponse.json(
-      { error: 'Plato no encontrado' },
-      { status: 404 }
-    );
+    const plato = await prisma.plato.update({ where: { id }, data: body });
+    return NextResponse.json(plato);
+  } catch {
+    return NextResponse.json({ error: 'Plato no encontrado' }, { status: 404 });
   }
 });
 
-// DELETE /api/platos/:id  ───── (admin)
-export const DELETE = requireAuth(['admin'])(async (_request, { params }) => {
+/* DELETE ─ eliminar plato */
+export const DELETE = requireAuth(['admin'])(async (_req, { params }) => {
   const id = Number(params.id);
 
   try {
     await prisma.plato.delete({ where: { id } });
-    return NextResponse.json({ ok: true });   // 200 OK
+    return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json(
-      { error: 'Plato no encontrado' },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: 'Plato no encontrado' }, { status: 404 });
   }
 });
