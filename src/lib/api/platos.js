@@ -8,7 +8,7 @@ export async function listarCategoriasConPlatos() {
 }
 
 export async function crearPlato(data) {
-  // { nombre, descripcion, precio, categoriaId }
+  // { nombre, descripcion, precio, categoriaId, disponible }
   const res = await fetch(base, {
     method:'POST',
     headers:{ 'Content-Type':'application/json' },
@@ -37,4 +37,16 @@ export async function eliminarPlato(id) {
   });
   if (!res.ok) throw new Error('Error al eliminar plato');
   return true;
+}
+
+// Nueva función para cambiar disponibilidad
+export async function toggleDisponibilidad(id, disponible) {
+  const res = await fetch(`${base}/${id}`, {
+    method:'PUT',
+    headers:{ 'Content-Type':'application/json' },
+    credentials:'include',
+    body:JSON.stringify({ disponible }),
+  });
+  if (!res.ok) throw new Error('Error al cambiar disponibilidad');
+  return res.json();
 }

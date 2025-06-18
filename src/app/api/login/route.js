@@ -5,24 +5,35 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req) {
-  const { email, password } = await req.json();
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.password)))
-    return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
+  try {
+    const { email, password } = await req.json();
+    const user = await prisma.user.findFirst({ where: { email } });
 
-  const token = jwt.sign(
-    { userId: user.id, rol: user.rol },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN }
-  );
+    if (!user)
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
-  const res = NextResponse.json({ ok: true, rol: user.rol });  // 👈 devolvemos rol
-  res.cookies.set('token', token, {
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-  });
-  return res;
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword)
+      return NextResponse.json({ error: 'Contraseña inválida' }, { status: 401 });
+
+    const token = jwt.sign(
+      { userId: user.id, rol: user.rol },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    const res = NextResponse.json({ ok: true, rol: user.rol });
+    res.cookies.set('token', token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+    });
+
+    return res;
+  } catch (err) {
+    console.error('Error en /api/login:', err);  // 👈 log útil
+    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+  }
 }

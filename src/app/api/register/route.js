@@ -9,8 +9,8 @@ export async function POST(req) {
   if (!nombre || !email || !password)
     return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
 
-  if (await prisma.user.findUnique({ where: { email } }))
-    return NextResponse.json({ error: 'Email ya registrado' }, { status: 409 });
+  // if (await prisma.user.findUnique({ where: { email } }))
+  //   return NextResponse.json({ error: 'Email ya registrado' }, { status: 409 });
 
   const hash = await bcrypt.hash(password, 10);
 

@@ -11,50 +11,82 @@ export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async () => {
   return NextResponse.json(ordenes);
 });
 
-/* ─── POST /api/ordenes ─── (solo mozo) */
-/* ─── POST /api/ordenes ─── (solo mozo) */
+
 export const POST = requireAuth(['mozo'])(async (request) => {
   const mozoId = request.user.userId;
-  const { mesaId, clienteId, items = [], notas } = await request.json(); // ← items por defecto []
+  const { mesaId, clienteId, cliente, items = [], notas } =
+    await request.json();
+  /*  cliente  = { nombre, dni, telefono }   (opcional) */
 
-  /* 1. Verificar mesa libre */
+  /* ── 1. Mesa libre ── */
   const mesa = await prisma.mesa.findUnique({ where: { id: mesaId } });
   if (!mesa || mesa.estado === 'ocupada')
-    return NextResponse.json({ error: 'Mesa ocupada o inexistente' }, { status: 409 });
+    return NextResponse.json(
+      { error: 'Mesa ocupada o inexistente' },
+      { status: 409 },
+    );
 
-  /* 2. Si hay items, validarlos */
+  /* ── 2. Validar items ── */
   const detalles = [];
   for (const it of items) {
     const plato = await prisma.plato.findUnique({ where: { id: it.platoId } });
     if (!plato)
       return NextResponse.json(
         { error: `Plato ${it.platoId} no existe` },
-        { status: 404 }
+        { status: 404 },
+      );
+    if (!plato.disponible)
+      return NextResponse.json(
+        { error: `El plato "${plato.nombre}" no está disponible` },
+        { status: 409 },
       );
     detalles.push({
-      platoId: it.platoId,
+      platoId: plato.id,
       cantidad: it.cantidad,
-      subtotal: plato.precio * it.cantidad
+      subtotal: plato.precio * it.cantidad,
     });
   }
+  const total = calcularTotal(detalles);
 
-  const total = detalles.length ? calcularTotal(detalles) : 0;
+  /* ── 3. Conectar o crear cliente ── */
+  let clienteRel = undefined;
 
-  /* 3. Crear orden */
+  if (clienteId) {
+    // caso 1: seleccionar existente
+    clienteRel = { connect: { id: clienteId } };
+  } else if (cliente?.dni) {
+    // caso 2: crear (o reutilizar por dni)
+    clienteRel = {
+      connectOrCreate: {
+        where:  { dni: cliente.dni },
+        create: {
+          nombre:   cliente.nombre,
+          dni:      cliente.dni,
+          telefono: cliente.telefono,
+        },
+      },
+    };
+  }
+
+  /* ── 4. Crear orden ── */
   const orden = await prisma.orden.create({
     data: {
       total,
       notas,
-      mozo:    { connect: { id: mozoId } },
-      mesa:    { connect: { id: mesaId } },
-      cliente: clienteId ? { connect: { id: clienteId } } : undefined,
-      ...(detalles.length && { detalles: { createMany: { data: detalles } } })
+      mozo:  { connect: { id: mozoId } },
+      mesa:  { connect: { id: mesaId } },
+      ...(clienteRel && { cliente: clienteRel }),
+      detalles: { createMany: { data: detalles } },
     },
-    include: { detalles: true, mozo: true, mesa: true, cliente: true }
+    include: { mesa: true, cliente: true, detalles: true, mozo: true },
   });
 
-  /* 4. Marcar mesa ocupada */
-  await prisma.mesa.update({ where: { id: mesaId }, data: { estado: 'ocupada' } });
+  /* ── 5. Ocupa la mesa ── */
+  await prisma.mesa.update({
+    where: { id: mesaId },
+    data:  { estado: 'ocupada' },
+  });
 
   return NextResponse.json(orden, { status: 201 });
 });
+

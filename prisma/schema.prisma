@@ -12,7 +12,7 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   nombre    String
-  email     String   @unique
+  email     String   
   password  String
   rol       Rol
   createdAt DateTime @default(now())
@@ -39,15 +39,17 @@ model Plato {
   nombre      String
   descripcion String
   precio      Float
+  disponible  Boolean      @default(true)   // 👈 NUEVO
   categoriaId Int?
-  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
+  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
   detalles    DetalleOrden[]
 }
+
 
 model Cliente {
   id        Int      @id @default(autoincrement())
   nombre    String
-  dni       String
+  dni       String @unique
   telefono  String
   ordenes   Orden[]
   facturas  Factura[]
