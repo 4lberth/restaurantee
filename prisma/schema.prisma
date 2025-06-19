@@ -35,15 +35,16 @@ model Categoria {
 }
 
 model Plato {
-  id          Int          @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   nombre      String
   descripcion String
   precio      Float
-  disponible  Boolean      @default(true)   // 👈 NUEVO
+  disponible  Boolean @default(true)   // ← ¡debe estar!
   categoriaId Int?
-  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
+  categoria   Categoria?  @relation(fields:[categoriaId], references:[id])
   detalles    DetalleOrden[]
 }
+
 
 
 model Cliente {
