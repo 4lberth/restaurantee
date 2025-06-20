@@ -39,7 +39,7 @@ model Plato {
   nombre      String
   descripcion String
   precio      Float
-  disponible  Boolean @default(true)   // ← ¡debe estar!
+  disponible  Boolean @default(true)  
   categoriaId Int?
   categoria   Categoria?  @relation(fields:[categoriaId], references:[id])
   detalles    DetalleOrden[]
