@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { registrarActividad } from '@/lib/actividad';
 import { NextResponse } from 'next/server';
 
 /* --- GET /api/platos?soloDisponibles=1 --- */
@@ -50,7 +51,16 @@ export const POST = requireAuth(['admin'])(async (request) => {
         categoriaId: catId,
         disponible: Boolean(disponible),
       },
+      include: { categoria: true } // Para obtener el nombre de la categoría
     });
+    
+    // 🆕 Registrar actividad
+    await registrarActividad(
+      'plato_creado',
+      `Nuevo plato agregado: "${nuevo.nombre}" ${nuevo.categoria ? `(${nuevo.categoria.nombre})` : ''}`,
+      request.user?.userId
+    );
+    
     return NextResponse.json(nuevo, { status: 201 });
   } catch {
     return NextResponse.json(

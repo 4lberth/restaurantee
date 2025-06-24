@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { calcularTotal } from '@/lib/calc-total';
+import { registrarActividad } from '@/lib/actividad';
 import { NextResponse } from 'next/server';
 
 /* ─── GET /api/ordenes ─── (admin • mozo • cocina) */
@@ -11,12 +12,10 @@ export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async () => {
   return NextResponse.json(ordenes);
 });
 
-
 export const POST = requireAuth(['mozo'])(async (request) => {
   const mozoId = request.user.userId;
   const { mesaId, clienteId, cliente, items = [], notas } =
     await request.json();
-  /*  cliente  = { nombre, dni, telefono }   (opcional) */
 
   /* ── 1. Mesa libre ── */
   const mesa = await prisma.mesa.findUnique({ where: { id: mesaId } });
@@ -52,10 +51,8 @@ export const POST = requireAuth(['mozo'])(async (request) => {
   let clienteRel = undefined;
 
   if (clienteId) {
-    // caso 1: seleccionar existente
     clienteRel = { connect: { id: clienteId } };
   } else if (cliente?.dni) {
-    // caso 2: crear (o reutilizar por dni)
     clienteRel = {
       connectOrCreate: {
         where:  { dni: cliente.dni },
@@ -87,6 +84,18 @@ export const POST = requireAuth(['mozo'])(async (request) => {
     data:  { estado: 'ocupada' },
   });
 
+  // 🆕 Registrar actividades
+  await registrarActividad(
+    'orden_creada',
+    `Nueva orden #${orden.id} - Mesa ${orden.mesa.numero} (S/${orden.total})`,
+    request.user?.userId
+  );
+
+  await registrarActividad(
+    'mesa_ocupada',
+    `Mesa ${orden.mesa.numero} ocupada por orden #${orden.id}`,
+    request.user?.userId
+  );
+
   return NextResponse.json(orden, { status: 201 });
 });
-

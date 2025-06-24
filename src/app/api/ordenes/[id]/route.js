@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { calcularTotal } from '@/lib/calc-total';
+import { registrarActividad } from '@/lib/actividad';
 import { NextResponse } from 'next/server';
 
 /*  GET /api/ordenes/:id ─ admin • mozo • cocina  */
@@ -18,7 +19,7 @@ export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async (_req, { param
   return NextResponse.json(orden);               // 200 OK
 });
 
-export const DELETE = requireAuth(['admin', 'mozo'])(async (_req, { params }) => {
+export const DELETE = requireAuth(['admin', 'mozo'])(async (request, { params }) => {
   const id = Number(params.id);
 
   const orden = await prisma.orden.findUnique({
@@ -40,9 +41,21 @@ export const DELETE = requireAuth(['admin', 'mozo'])(async (_req, { params }) =>
     await tx.mesa.update({ where: { id: orden.mesaId }, data: { estado: 'libre' } });
   });
 
+  // 🆕 Registrar actividades
+  await registrarActividad(
+    'orden_eliminada',
+    `Orden #${orden.id} eliminada - Mesa ${orden.mesa.numero} liberada`,
+    request.user?.userId
+  );
+
+  await registrarActividad(
+    'mesa_liberada',
+    `Mesa ${orden.mesa.numero} liberada por eliminación de orden #${orden.id}`,
+    request.user?.userId
+  );
+
   return NextResponse.json({ ok: true });
 });
-
 
 /* ——— PUT  /api/ordenes/:id ———
    (admin • mozo)  — editar  */
@@ -143,7 +156,27 @@ export const PUT = requireAuth(['admin', 'mozo'])(async (request, { params }) =>
       prisma.mesa.update({ where:{ id: orden.mesaId }, data:{ estado:'libre'   }}),
       prisma.mesa.update({ where:{ id: mesaId        }, data:{ estado:'ocupada'}}),
     ]);
+
+    // 🆕 Registrar actividades del cambio de mesa
+    await registrarActividad(
+      'mesa_liberada',
+      `Mesa ${orden.mesa.numero} liberada por cambio de orden #${orden.id}`,
+      request.user?.userId
+    );
+
+    await registrarActividad(
+      'mesa_ocupada',
+      `Mesa ${mesaId} ocupada por orden #${orden.id}`,
+      request.user?.userId
+    );
   }
+
+  // 🆕 Registrar actividad de actualización
+  await registrarActividad(
+    'orden_actualizada',
+    `Orden #${orden.id} actualizada - Mesa ${resultado.mesa.numero}`,
+    request.user?.userId
+  );
 
   return NextResponse.json(resultado);   // 200 OK
 });

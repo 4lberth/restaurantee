@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { registrarActividad } from '@/lib/actividad';
 import { NextResponse } from 'next/server';
 
 // GET  /api/mesas   (admin • mozo)
@@ -11,6 +12,15 @@ export const GET = requireAuth(['admin', 'mozo'])(async () => {
 // POST /api/mesas   (solo admin)
 export const POST = requireAuth(['admin'])(async (request) => {
   const { numero } = await request.json();
+  
   const nueva = await prisma.mesa.create({ data: { numero } });
+  
+  // 🆕 Registrar actividad
+  await registrarActividad(
+    'mesa_creada',
+    `Mesa ${nueva.numero} creada`,
+    request.user?.userId
+  );
+  
   return NextResponse.json(nueva, { status: 201 });
 });

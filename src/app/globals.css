@@ -4,3 +4,29 @@
 
 /* ---- estilos base propios ---- */
 html,body{ @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white min-h-screen;}
+
+/* Agregar al final de tu archivo globals.css */
+
+/* Scrollbar personalizado para la sección de actividades */
+.scrollbar-actividades {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+}
+
+.scrollbar-actividades::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-actividades::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-actividades::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-actividades::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
+}

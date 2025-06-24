@@ -1,6 +1,6 @@
-// GET  /api/usuarios           (solo admin)
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { registrarActividad } from '@/lib/actividad';
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
@@ -13,8 +13,8 @@ export const GET = requireAuth(['admin'])(async () => {
 });
 
 // ─────────── CREAR ───────────
-export const POST = requireAuth(['admin'])(async (req) => {
-  const { nombre, email, password, rol } = await req.json();
+export const POST = requireAuth(['admin'])(async (request) => {
+  const { nombre, email, password, rol } = await request.json();
 
   if (!nombre || !email || !password || !rol)
     return NextResponse.json({ error:'Faltan datos' }, { status:400 });
@@ -27,6 +27,13 @@ export const POST = requireAuth(['admin'])(async (req) => {
   const nuevo = await prisma.user.create({
     data:{ nombre, email, password:hash, rol }
   });
+
+  // 🆕 Registrar actividad
+  await registrarActividad(
+    'usuario_creado',
+    `Usuario "${nuevo.nombre}" creado con rol ${nuevo.rol}`,
+    request.user?.userId
+  );
 
   return NextResponse.json(
     { id:nuevo.id, nombre, email, rol },
