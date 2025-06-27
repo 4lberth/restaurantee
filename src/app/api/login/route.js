@@ -1,4 +1,3 @@
-// src/app/api/login/route.js
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -22,7 +21,13 @@ export async function POST(req) {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    const res = NextResponse.json({ ok: true, rol: user.rol });
+    const res = NextResponse.json({
+      ok: true,
+      rol: user.rol,
+      token, 
+    });
+
+    // Para web: sigue usando la cookie httpOnly
     res.cookies.set('token', token, {
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 7,
@@ -33,7 +38,7 @@ export async function POST(req) {
 
     return res;
   } catch (err) {
-    console.error('Error en /api/login:', err);  // 👈 log útil
+    console.error('Error en /api/login:', err);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
