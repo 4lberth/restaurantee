@@ -55,8 +55,8 @@ export default function CocinaDashboard() {
   const data = ordenes
     .filter(o =>
       showListos
-        ? ['pendiente','preparando','listo'].includes(o.estado)
-        : ['pendiente','preparando'].includes(o.estado)
+        ? ['pendiente','en_preparacion','listo'].includes(o.estado)
+        : ['pendiente','en_preparacion'].includes(o.estado)
     )
     .filter(o =>
       (o.mesa?.numero + (o.cliente?.nombre ?? '')).toLowerCase()
@@ -66,7 +66,7 @@ export default function CocinaDashboard() {
   const getEstadoBadge = (estado) => {
     const styles = {
       pendiente: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      preparando: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      en_preparacion: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
       listo: 'bg-green-500/20 text-green-400 border-green-500/30',
       servido: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       cancelada: 'bg-red-500/20 text-red-400 border-red-500/30'
@@ -125,9 +125,9 @@ export default function CocinaDashboard() {
         <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-400 text-sm">Preparando</p>
+              <p className="text-orange-400 text-sm">en_preparacion</p>
               <p className="text-2xl font-bold text-white">
-                {ordenes.filter(o => o.estado === 'preparando').length}
+                {ordenes.filter(o => o.estado === 'en_preparacion').length}
               </p>
             </div>
             <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
@@ -160,7 +160,7 @@ export default function CocinaDashboard() {
         <div className="flex flex-wrap gap-3 items-center">
           {/* Acciones de estado */}
           <button
-            onClick={() => setEstado('preparando')}
+            onClick={() => setEstado('en_preparacion')}
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
             disabled={!seleccion.length}
           >

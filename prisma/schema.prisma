@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "./ERD.svg"
+}
+
+
 /* ————————————— MODELOS ————————————— */
 
 model User {
@@ -17,10 +23,8 @@ model User {
   rol       Rol
   createdAt DateTime @default(now())
 
-  // ⬅️ lado 1-a-N: un mozo atiende muchas órdenes
   ordenesAtendidas Orden[] @relation("MozoOrden")
   
-  // ⬅️ Nueva relación: actividades realizadas por el usuario
   actividades Actividad[]
 }
 
@@ -109,7 +113,6 @@ model Factura {
   @@index([creadoEn])
 }
 
-// ⬅️ NUEVO MODELO: Actividad
 model Actividad {
   id        Int      @id @default(autoincrement())
   tipo      TipoActividad
@@ -147,7 +150,6 @@ enum EstadoOrden {
   cancelada
 }
 
-// ⬅️ NUEVO ENUM: Tipo de Actividad
 enum TipoActividad {
   mesa_creada
   mesa_liberada

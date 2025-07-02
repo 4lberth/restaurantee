@@ -59,35 +59,7 @@ export default function CocinaSidebar() {
           <span className="font-medium">Historial</span>
         </Link>
 
-        <Link
-          href="/cocina/platos"
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-            isActive('/cocina/platos')
-              ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/25'
-              : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-          }`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-          <span className="font-medium">Gestión de Platos</span>
-        </Link>
-
-        <div className="pt-4 mt-4 border-t border-gray-700">
-          <Link
-            href="/cocina/estadisticas"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-              isActive('/cocina/estadisticas')
-                ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg shadow-orange-500/25'
-                : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-            }`}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="font-medium">Estadísticas</span>
-          </Link>
-        </div>
+        
       </nav>
 
       {/* User Info & Logout */}

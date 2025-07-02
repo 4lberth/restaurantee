@@ -9,6 +9,7 @@ export default function CreateOrderModal({ mesa, onClose }) {
   const [notas, setNotas] = useState('');
   const [loading, setLoad] = useState(false);
   const [msg, setMsg] = useState('');
+  const [catActiva, setCatActiva] = useState(0);
 
   const [clientes, setClientes] = useState([]);
   const [clienteSel, setCliSel] = useState('');
@@ -61,7 +62,7 @@ export default function CreateOrderModal({ mesa, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900/95 backdrop-blur border border-gray-700 rounded-2xl shadow-2xl">
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-gray-900/95 backdrop-blur border border-gray-700 rounded-2xl shadow-2xl">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -118,33 +119,81 @@ export default function CreateOrderModal({ mesa, onClose }) {
             )}
           </div>
 
-          {/* Catálogo de platos */}
+          {/* Catálogo de platos con pestañas de categorías */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4 mb-6">
             <h3 className="text-white font-medium mb-4">Seleccionar Platos</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
-              {cats.flatMap(c => c.platos).map(p => (
-                <button 
-                  key={p.id} 
-                  onClick={() => add(p)}
-                  className="p-4 rounded-lg bg-gray-700/50 hover:bg-gray-600/50 border border-gray-600 hover:border-orange-500/50 text-left transition-all duration-200 group"
-                >
-                  <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors duration-200">{p.nombre}</h3>
-                  <p className="text-sm text-gray-400 mb-2">{p.descripcion}</p>
-                  <p className="text-orange-400 font-semibold">S/ {p.precio.toFixed(2)}</p>
-                </button>
-              ))}
-            </div>
+            
+            {cats.length > 0 && (
+              <>
+                {/* Tabs de categorías */}
+                <div className="flex flex-wrap gap-2 mb-4 pb-3 border-b border-gray-600">
+                  {cats.map((cat, idx) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCatActiva(idx)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        catActiva === idx
+                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+                          : 'bg-gray-700/30 text-gray-300 border border-gray-600 hover:bg-gray-700/50 hover:text-white'
+                      }`}
+                    >
+                      {cat.nombre}
+                      <span className="ml-2 text-xs opacity-75">({cat.platos?.length || 0})</span>
+                    </button>
+                  ))}
+                </div>
 
-            {!cats.flatMap(c => c.platos).length && (
+                {/* Platos de la categoría activa */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+                  {cats[catActiva]?.platos?.map(p => {
+                    const enCarrito = cart.find(item => item.platoId === p.id);
+                    return (
+                      <button 
+                        key={p.id} 
+                        onClick={() => add(p)}
+                        className="p-4 rounded-lg bg-gray-700/50 hover:bg-gray-600/50 border border-gray-600 hover:border-orange-500/50 text-left transition-all duration-200 group relative"
+                      >
+                        {enCarrito && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            {enCarrito.cantidad}
+                          </div>
+                        )}
+                        <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors duration-200">{p.nombre}</h3>
+                        <p className="text-sm text-gray-400 mb-2 line-clamp-2">{p.descripcion}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-orange-400 font-semibold">S/ {p.precio.toFixed(2)}</p>
+                          {p.tiempoPreparacion && (
+                            <span className="text-xs text-gray-500">⏱ {p.tiempoPreparacion} min</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {(!cats[catActiva]?.platos || cats[catActiva].platos.length === 0) && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 italic">No hay platos en esta categoría</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {!cats.length && (
               <div className="text-center py-8">
-                <p className="text-gray-400 italic">No hay platos disponibles</p>
+                <p className="text-gray-400 italic">Cargando platos...</p>
               </div>
             )}
           </div>
 
           {/* Carrito */}
           <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4 mb-6">
-            <h3 className="text-white font-medium mb-4">Platos Seleccionados</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-medium">Platos Seleccionados</h3>
+              {cart.length > 0 && (
+                <span className="text-sm text-gray-400">{cart.length} plato{cart.length !== 1 && 's'}</span>
+              )}
+            </div>
             
             {cart.length ? (
               <div className="space-y-3">
