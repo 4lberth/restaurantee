@@ -13,10 +13,6 @@ export default function AdminHome() {
   const [categorias, setCategorias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [actividades, setActividades] = useState([]);
-  const [estadisticasHoy, setEstadisticasHoy] = useState({
-    pedidos: 0,
-    facturado: 0
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -34,26 +30,6 @@ export default function AdminHome() {
         // Llamada directa a la API de usuarios
         const usuariosResponse = await fetch('/api/usuarios', { credentials: 'include' });
         const usuariosData = usuariosResponse.ok ? await usuariosResponse.json() : [];
-        
-        // Obtener estadísticas de hoy usando tu API de historial
-        const hoy = new Date().toISOString().split('T')[0]; // yyyy-mm-dd
-        const estadisticasResponse = await fetch(`/api/ordenes/historial?desde=${hoy}&hasta=${hoy}`, { 
-          credentials: 'include' 
-        });
-        
-        let estadisticasData = { pedidos: 0, facturado: 0 };
-        if (estadisticasResponse.ok) {
-          const ordenesHoy = await estadisticasResponse.json();
-          
-          estadisticasData = {
-            pedidos: ordenesHoy.length,
-            facturado: ordenesHoy.reduce((total, orden) => {
-              // Cada orden ya tiene su total calculado
-              const totalOrden = Number(orden.total) || 0;
-              return total + totalOrden;
-            }, 0)
-          };
-        }
 
         // Obtener actividades recientes
         const actividadesResponse = await fetch('/api/actividades', { credentials: 'include' });
@@ -64,7 +40,6 @@ export default function AdminHome() {
         setCategorias(categoriasData);
         setUsuarios(usuariosData);
         setActividades(actividadesData);
-        setEstadisticasHoy(estadisticasData);
         
       } catch (e) {
         setError(e.message);
@@ -156,7 +131,7 @@ export default function AdminHome() {
       </div>
 
       {/* Métricas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Card Mesas */}
         <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur border border-orange-500/30 rounded-xl p-6 hover:from-orange-500/30 hover:to-red-500/30 transition-all duration-300">
           <div className="flex items-center justify-between">
@@ -202,22 +177,6 @@ export default function AdminHome() {
             <div className="w-12 h-12 bg-orange-600/20 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Card Pedidos Hoy */}
-        <div className="bg-gradient-to-br from-red-600/20 to-orange-500/20 backdrop-blur border border-red-600/30 rounded-xl p-6 hover:from-red-600/30 hover:to-orange-500/30 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-200 text-sm font-medium">Pedidos Hoy</p>
-              <p className="text-3xl font-bold text-white">{estadisticasHoy.pedidos}</p>
-              <p className="text-red-300 text-xs">S/ {estadisticasHoy.facturado.toLocaleString()} facturado</p>
-            </div>
-            <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
           </div>
