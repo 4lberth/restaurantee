@@ -86,6 +86,10 @@ export default function UsuariosAdmin() {
     return styles[rol] || styles.mozo;
   };
 
+  // Verificar si el usuario en edición es admin
+  const usuarioEnEdicion = editId ? users.find(u => u.id === editId) : null;
+  const esUsuarioAdmin = usuarioEnEdicion?.rol === 'admin';
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="text-gray-400">Cargando…</div>
@@ -141,6 +145,16 @@ export default function UsuariosAdmin() {
         <h2 className="text-lg font-medium text-white mb-4">
           {editId ? 'Editar Usuario' : 'Nuevo Usuario'}
         </h2>
+        
+        {/* Mensaje de advertencia para usuarios admin */}
+        {esUsuarioAdmin && (
+          <div className="mb-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ No se puede modificar el rol de un usuario administrador por seguridad
+            </p>
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <input
             name="nombre" placeholder="Nombre completo"
@@ -167,7 +181,8 @@ export default function UsuariosAdmin() {
 
           <select
             name="rol" value={form.rol} onChange={onChange}
-            className={`px-4 py-2 rounded-lg bg-gray-700/50 border border-gray-600 text-white focus:outline-none focus:border-orange-500 transition-colors duration-200 ${editId ? 'md:col-span-2' : ''}`}
+            disabled={esUsuarioAdmin}
+            className={`px-4 py-2 rounded-lg bg-gray-700/50 border border-gray-600 text-white focus:outline-none focus:border-orange-500 transition-colors duration-200 ${editId ? 'md:col-span-2' : ''} ${esUsuarioAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <option value="mozo">Mozo</option>
             <option value="admin">Admin</option>

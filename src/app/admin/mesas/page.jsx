@@ -218,7 +218,6 @@ export default function MesasAdmin() {
               </th>
               <th className="p-4 text-left text-gray-300 font-medium">Número</th>
               <th className="p-4 text-left text-gray-300 font-medium">Estado</th>
-              <th className="p-4 text-left text-gray-300 font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -243,29 +242,11 @@ export default function MesasAdmin() {
                     {m.estado === 'libre' ? 'Libre' : 'Ocupada'}
                   </span>
                 </td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSeleccion([m.id]);
-                        cambiarEstado(m.estado === 'libre' ? 'ocupada' : 'libre');
-                      }}
-                      disabled={processing}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        m.estado === 'libre'
-                          ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/30'
-                          : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
-                      } disabled:opacity-40 disabled:cursor-not-allowed`}
-                    >
-                      {m.estado === 'libre' ? 'Ocupar' : 'Liberar'}
-                    </button>
-                  </div>
-                </td>
               </tr>
             ))}
             {!mesasFiltradas.length && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-400 italic">
+                <td colSpan={3} className="p-8 text-center text-gray-400 italic">
                   {busqueda ? 'No se encontraron mesas que coincidan con la búsqueda' : 'No hay mesas registradas'}
                 </td>
               </tr>

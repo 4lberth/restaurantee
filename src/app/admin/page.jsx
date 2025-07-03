@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { listarMesas } from '@/lib/api/mozo';
 import { listarPlatos } from '@/lib/api/mozo';
+import { listarCategorias } from '@/lib/api/categorias';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ export default function AdminHome() {
   // Estados para los datos
   const [mesas, setMesas] = useState([]);
   const [platos, setPlatos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [actividades, setActividades] = useState([]);
   const [estadisticasHoy, setEstadisticasHoy] = useState({
@@ -27,6 +29,7 @@ export default function AdminHome() {
         // Usar tus funciones de API existentes
         const mesasData = await listarMesas();
         const platosData = await listarPlatos({ soloDisponibles: false }); // Todos los platos
+        const categoriasData = await listarCategorias(); // Usar tu función existente
         
         // Llamada directa a la API de usuarios
         const usuariosResponse = await fetch('/api/usuarios', { credentials: 'include' });
@@ -58,6 +61,7 @@ export default function AdminHome() {
 
         setMesas(mesasData);
         setPlatos(platosData);
+        setCategorias(categoriasData);
         setUsuarios(usuariosData);
         setActividades(actividadesData);
         setEstadisticasHoy(estadisticasData);
@@ -82,9 +86,8 @@ export default function AdminHome() {
     return acc;
   }, {});
 
-  const categorias = platos.length > 0 
-    ? [...new Set(platos.map(p => p.categoria))].length 
-    : 0;
+  // Usar el conteo real de categorías desde la API
+  const totalCategorias = categorias.length;
 
   // Funciones helper para actividades
   const formatearTiempo = (fecha) => {
@@ -176,7 +179,7 @@ export default function AdminHome() {
             <div>
               <p className="text-red-200 text-sm font-medium">Platos</p>
               <p className="text-3xl font-bold text-white">{platos.length}</p>
-              <p className="text-red-300 text-xs">{categorias} categorías</p>
+              <p className="text-red-300 text-xs">{totalCategorias} categorías</p>
             </div>
             <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
