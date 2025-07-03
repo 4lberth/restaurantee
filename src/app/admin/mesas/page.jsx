@@ -11,46 +11,94 @@ export default function MesasAdmin() {
   const [mesas, setMesas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [numero, setNumero] = useState('');
-  const [seleccion, setSel] = useState([]);
-  const [busqueda, setBusq] = useState('');
+  const [seleccion, setSeleccion] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [processing, setProcessing] = useState(false);
+
+  const clearMessages = () => {
+    setError('');
+    setSuccess('');
+  };
+
+  const cargarMesas = async () => {
+    try {
+      const mesasData = await listarMesas();
+      setMesas(mesasData);
+      setError('');
+    } catch (e) {
+      setError(`Error al cargar mesas: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try { setMesas(await listarMesas()); }
-      catch (e) { setError(e.message); }
-      setLoading(false);
-    })();
+    cargarMesas();
   }, []);
 
-  const toggle = id => setSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const clearSel = () => setSel([]);
+  const toggle = id => setSeleccion(s => 
+    s.includes(id) ? s.filter(x => x !== id) : [...s, id]
+  );
 
-  const onSubmit = async e => {
+  const clearSeleccion = () => setSeleccion([]);
+
+  const onSubmit = async (e) => {
     e.preventDefault();
+    if (!numero || numero <= 0) {
+      setError('Por favor ingresa un número de mesa válido');
+      return;
+    }
+
+    setProcessing(true);
+    clearMessages();
+
     try {
-      await crearMesa(Number(numero));
-      location.reload();
-    } catch (e) { setError(e.message); }
+      const nuevaMesa = await crearMesa(Number(numero));
+      setSuccess(`Mesa ${nuevaMesa.numero} creada exitosamente`);
+      setNumero('');
+      await cargarMesas(); // Recargar la lista
+    } catch (e) {
+      setError(`Error al crear mesa: ${e.message}`);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const cambiarEstado = async (estado) => {
-    if (seleccion.length !== 1)
-      return alert('Selecciona exactamente una mesa');
+    if (seleccion.length !== 1) {
+      setError('Selecciona exactamente una mesa para cambiar su estado');
+      return;
+    }
+
+    setProcessing(true);
+    clearMessages();
+
     try {
-      await cambiarEstadoMesa(seleccion[0], estado);
-      location.reload();
-    } catch (e) { alert(e.message); }
+      const mesaId = seleccion[0];
+      const mesa = mesas.find(m => m.id === mesaId);
+      
+      await cambiarEstadoMesa(mesaId, estado);
+      setSuccess(`Mesa ${mesa.numero} marcada como ${estado}`);
+      setSeleccion([]);
+      await cargarMesas(); // Recargar la lista
+    } catch (e) {
+      setError(`Error al cambiar estado: ${e.message}`);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const filtro = busqueda.toLowerCase();
   const mesasFiltradas = mesas.filter(m =>
-    (m.numero + m.estado).toString().toLowerCase().includes(filtro)
+    (m.numero.toString() + m.estado).toLowerCase().includes(filtro)
   );
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <div className="text-gray-400">Cargando…</div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      <div className="ml-3 text-gray-400">Cargando mesas...</div>
     </div>
   );
 
@@ -62,30 +110,68 @@ export default function MesasAdmin() {
         <p className="text-gray-400">Administra el estado y disponibilidad de las mesas</p>
       </div>
 
+      {/* Messages */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-red-400">{error}</p>
+            <button 
+              onClick={clearMessages}
+              className="text-red-400 hover:text-red-300"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-green-400">{success}</p>
+            <button 
+              onClick={clearMessages}
+              className="text-green-400 hover:text-green-300"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Barra de acciones */}
       <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4">
         <div className="flex flex-wrap gap-4 items-center">
           <button
             onClick={() => cambiarEstado('libre')}
+            disabled={seleccion.length !== 1 || processing}
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 shadow-lg hover:shadow-green-500/25"
-            disabled={seleccion.length !== 1}
           >
-            Marcar libre
+            {processing ? 'Procesando...' : 'Marcar libre'}
           </button>
 
           <button
             onClick={() => cambiarEstado('ocupada')}
+            disabled={seleccion.length !== 1 || processing}
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 shadow-lg hover:shadow-orange-500/25"
-            disabled={seleccion.length !== 1}
           >
-            Marcar ocupada
+            {processing ? 'Procesando...' : 'Marcar ocupada'}
           </button>
+
+          {seleccion.length > 0 && (
+            <button
+              onClick={clearSeleccion}
+              className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white font-medium transition-all duration-200"
+            >
+              Limpiar selección ({seleccion.length})
+            </button>
+          )}
 
           <input
             type="text"
-            placeholder="Buscar mesa…"
+            placeholder="Buscar mesa..."
             value={busqueda}
-            onChange={e => setBusq(e.target.value)}
+            onChange={e => setBusqueda(e.target.value)}
             className="ml-auto w-60 px-4 py-2 rounded-lg bg-gray-700/50 border border-gray-600 placeholder-gray-400 text-white focus:outline-none focus:border-orange-500 transition-colors duration-200"
           />
         </div>
@@ -98,23 +184,23 @@ export default function MesasAdmin() {
           <input
             type="number"
             min="1"
+            max="999"
             placeholder="Número de mesa"
             value={numero}
             onChange={e => setNumero(e.target.value)}
-            className="w-48 px-4 py-2 rounded-lg bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors duration-200"
+            disabled={processing}
+            className="w-48 px-4 py-2 rounded-lg bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-colors duration-200 disabled:opacity-50"
             required
           />
-          <button className="px-6 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-orange-500/25">
-            Crear mesa
+          <button 
+            type="submit"
+            disabled={processing || !numero}
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all duration-200 shadow-lg hover:shadow-orange-500/25"
+          >
+            {processing ? 'Creando...' : 'Crear mesa'}
           </button>
         </form>
       </div>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <p className="text-red-400">{error}</p>
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl overflow-hidden">
@@ -124,12 +210,15 @@ export default function MesasAdmin() {
               <th className="p-4 w-12 text-center text-gray-300">
                 <input
                   type="checkbox"
-                  onChange={e => setSel(e.target.checked ? mesas.map(m => m.id) : [])}
+                  checked={seleccion.length === mesas.length && mesas.length > 0}
+                  onChange={e => setSeleccion(e.target.checked ? mesas.map(m => m.id) : [])}
                   className="accent-orange-500"
+                  disabled={processing}
                 />
               </th>
               <th className="p-4 text-left text-gray-300 font-medium">Número</th>
               <th className="p-4 text-left text-gray-300 font-medium">Estado</th>
+              <th className="p-4 text-left text-gray-300 font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -140,6 +229,7 @@ export default function MesasAdmin() {
                     type="checkbox"
                     checked={seleccion.includes(m.id)}
                     onChange={() => toggle(m.id)}
+                    disabled={processing}
                     className="accent-orange-500"
                   />
                 </td>
@@ -153,17 +243,55 @@ export default function MesasAdmin() {
                     {m.estado === 'libre' ? 'Libre' : 'Ocupada'}
                   </span>
                 </td>
+                <td className="p-4">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSeleccion([m.id]);
+                        cambiarEstado(m.estado === 'libre' ? 'ocupada' : 'libre');
+                      }}
+                      disabled={processing}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        m.estado === 'libre'
+                          ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 border border-orange-500/30'
+                          : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
+                      } disabled:opacity-40 disabled:cursor-not-allowed`}
+                    >
+                      {m.estado === 'libre' ? 'Ocupar' : 'Liberar'}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {!mesasFiltradas.length && (
               <tr>
-                <td colSpan={3} className="p-8 text-center text-gray-400 italic">
+                <td colSpan={4} className="p-8 text-center text-gray-400 italic">
                   {busqueda ? 'No se encontraron mesas que coincidan con la búsqueda' : 'No hay mesas registradas'}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4">
+          <div className="text-2xl font-bold text-white">{mesas.length}</div>
+          <div className="text-gray-400">Total mesas</div>
+        </div>
+        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4">
+          <div className="text-2xl font-bold text-green-400">
+            {mesas.filter(m => m.estado === 'libre').length}
+          </div>
+          <div className="text-gray-400">Mesas libres</div>
+        </div>
+        <div className="bg-gray-800/50 backdrop-blur border border-gray-700 rounded-xl p-4">
+          <div className="text-2xl font-bold text-orange-400">
+            {mesas.filter(m => m.estado === 'ocupada').length}
+          </div>
+          <div className="text-gray-400">Mesas ocupadas</div>
+        </div>
       </div>
     </div>
   );

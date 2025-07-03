@@ -3,30 +3,236 @@ import { useEffect, useState } from 'react';
 import {
   listarOrdenes,
   cambiarEstadoOrden,
+  obtenerDetallesOrden,
 } from '@/lib/api/ordenes';
 
+// Componente Modal para mostrar detalles de la orden
+function DetallesOrdenModal({ ordenId, onClose }) {
+  const [orden, setOrden] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (ordenId) {
+      cargarDetalles();
+    }
+  }, [ordenId]);
+
+  const cargarDetalles = async () => {
+    try {
+      setLoading(true);
+      const detalles = await obtenerDetallesOrden(ordenId);
+      setOrden(detalles);
+    } catch (e) {
+      setError(e.message);
+    }
+    setLoading(false);
+  };
+
+  if (!ordenId) return null;
+
+  const formatearFecha = (fecha) => {
+    return new Date(fecha).toLocaleString('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getEstadoBadge = (estado) => {
+    const styles = {
+      pendiente: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+      en_preparacion: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      listo: 'bg-green-500/20 text-green-400 border-green-500/30',
+      servido: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      cancelada: 'bg-red-500/20 text-red-400 border-red-500/30'
+    };
+    return styles[estado] || styles.pendiente;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 className="text-2xl font-bold text-white">
+            Detalles de Orden #{ordenId}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-gray-400">Cargando detalles...</div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-red-400">{error}</p>
+            </div>
+          ) : orden ? (
+            <div className="space-y-6">
+              {/* Información General */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-700/30 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-white mb-3">Información General</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Estado:</span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getEstadoBadge(orden.estado)}`}>
+                        {orden.estado.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Mesa:</span>
+                      <span className="text-white font-medium">Mesa {orden.mesa?.numero || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Mozo:</span>
+                      <span className="text-white">{orden.mozo?.nombre || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total:</span>
+                      <span className="text-white font-bold">S/ {orden.total?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Creada:</span>
+                      <span className="text-white text-sm">{formatearFecha(orden.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-700/30 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-white mb-3">Cliente</h3>
+                  {orden.cliente ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Nombre:</span>
+                        <span className="text-white">{orden.cliente.nombre}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">DNI:</span>
+                        <span className="text-white">{orden.cliente.dni}</span>
+                      </div>
+                      {orden.cliente.telefono && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Teléfono:</span>
+                          <span className="text-white">{orden.cliente.telefono}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 italic">Sin cliente asignado</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Notas */}
+              {orden.notas && (
+                <div className="bg-gray-700/30 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-white mb-3">Notas</h3>
+                  <p className="text-gray-300">{orden.notas}</p>
+                </div>
+              )}
+
+              {/* Detalles de Platos */}
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-white mb-4">Platos Ordenados</h3>
+                <div className="space-y-3">
+                  {orden.detalles && orden.detalles.length > 0 ? (
+                    orden.detalles.map((detalle, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-600/30 rounded-lg">
+                        <div className="flex-1">
+                          <p className="text-white font-medium">{detalle.plato?.nombre || `Plato ID: ${detalle.platoId}`}</p>
+                          {detalle.plato?.descripcion && (
+                            <p className="text-gray-400 text-sm">{detalle.plato.descripcion}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white">
+                            <span className="font-medium">{detalle.cantidad}x</span>
+                            <span className="ml-2">S/ {detalle.plato?.precio?.toFixed(2) || '0.00'}</span>
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            Subtotal: S/ {detalle.subtotal?.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 italic">No hay platos en esta orden</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tiempo transcurrido */}
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-white mb-3">Tiempo</h3>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-gray-400">Tiempo transcurrido:</span>
+                    <span className="text-white ml-2 font-medium">
+                      {Math.floor((new Date() - new Date(orden.createdAt)) / 60000)} minutos
+                    </span>
+                  </div>
+                  {Math.floor((new Date() - new Date(orden.createdAt)) / 60000) > 30 && orden.estado === 'pendiente' && (
+                    <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm font-medium">
+                      ⚠️ Urgente
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CocinaDashboard() {
-  const [ordenes, setOrd]   = useState([]);
-  const [loading, setLoad]  = useState(true);
+  const [ordenes, setOrd] = useState([]);
+  const [loading, setLoad] = useState(true);
   const [seleccion, setSel] = useState([]);
-  const [busq, setBusq]     = useState('');
+  const [busq, setBusq] = useState('');
   const [showListos, setShow] = useState(false);
-  const [error, setErr]     = useState('');
+  const [error, setErr] = useState('');
+  const [ordenSeleccionadaId, setOrdenSeleccionadaId] = useState(null);
 
   /* cargar órdenes */
   useEffect(() => {
     (async () => {
-      try { 
-        setOrd(await listarOrdenes()); 
-      } catch (e){ 
-        setErr(e.message); 
+      try {
+        setOrd(await listarOrdenes());
+      } catch (e) {
+        setErr(e.message);
       }
       setLoad(false);
     })();
   }, []);
 
   /* selección */
-  const toggle   = id => setSel(s => s.includes(id) ? s.filter(x=>x!==id) : [...s,id]);
+  const toggle = id => setSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
   const clearSel = () => setSel([]);
   const selectAll = () => {
     const ids = data.map(o => o.id);
@@ -46,17 +252,26 @@ export default function CocinaDashboard() {
         )
       );
       clearSel();
-    } catch (e){ 
-      alert(e.message); 
+    } catch (e) {
+      alert(e.message);
     }
+  };
+
+  /* mostrar detalles */
+  const mostrarDetalles = (ordenId) => {
+    setOrdenSeleccionadaId(ordenId);
+  };
+
+  const cerrarModal = () => {
+    setOrdenSeleccionadaId(null);
   };
 
   /* filtrado */
   const data = ordenes
     .filter(o =>
       showListos
-        ? ['pendiente','en_preparacion','listo'].includes(o.estado)
-        : ['pendiente','en_preparacion'].includes(o.estado)
+        ? ['pendiente', 'en_preparacion', 'listo'].includes(o.estado)
+        : ['pendiente', 'en_preparacion'].includes(o.estado)
     )
     .filter(o =>
       (o.mesa?.numero + (o.cliente?.nombre ?? '')).toLowerCase()
@@ -242,7 +457,7 @@ export default function CocinaDashboard() {
             <thead>
               <tr className="bg-gray-700/50 border-b border-gray-600">
                 <th className="p-4 w-12">
-                  <input 
+                  <input
                     type="checkbox"
                     checked={data.length > 0 && seleccion.length === data.length}
                     onChange={() => seleccion.length === data.length ? clearSel() : selectAll()}
@@ -263,14 +478,14 @@ export default function CocinaDashboard() {
                 const tiempoTranscurrido = new Date() - new Date(o.createdAt);
                 const minutos = Math.floor(tiempoTranscurrido / 60000);
                 const esUrgente = minutos > 30 && o.estado === 'pendiente';
-                
+
                 return (
-                  <tr 
-                    key={o.id} 
+                  <tr
+                    key={o.id}
                     className={`border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors duration-150 ${esUrgente ? 'bg-red-900/10' : ''}`}
                   >
                     <td className="p-4 text-center">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={seleccion.includes(o.id)}
                         onChange={() => toggle(o.id)}
@@ -315,7 +530,7 @@ export default function CocinaDashboard() {
                     </td>
                     <td className="p-4 text-center">
                       <button
-                        onClick={() => alert(`Ver detalles de orden #${o.id}`)}
+                        onClick={() => mostrarDetalles(o.id)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 transition-all duration-200 hover:scale-110 mx-auto"
                         title="Ver detalles"
                       >
@@ -339,6 +554,12 @@ export default function CocinaDashboard() {
           </table>
         </div>
       </div>
+
+      {/* Modal de detalles */}
+      <DetallesOrdenModal 
+        ordenId={ordenSeleccionadaId} 
+        onClose={cerrarModal} 
+      />
     </div>
   );
 }

@@ -9,9 +9,18 @@ export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async (_req, { param
   const id = Number(params.id);
 
   const orden = await prisma.orden.findUnique({
-    where:   { id },
-    include: { detalles:true, mesa:true, cliente:true, mozo:true }
-  });
+  where: { id },
+  include: { 
+    detalles: {
+      include: {
+        plato: true  // ✅ Esto incluye nombre, precio, descripción del plato
+      }
+    }, 
+    mesa: true, 
+    cliente: true, 
+    mozo: true 
+  }
+});
 
   if (!orden)
     return NextResponse.json({ error:'Orden no encontrada' }, { status:404 });

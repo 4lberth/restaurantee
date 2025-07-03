@@ -7,8 +7,17 @@ import { NextResponse } from 'next/server';
 /* ─── GET /api/ordenes ─── (admin • mozo • cocina) */
 export const GET = requireAuth(['admin', 'mozo', 'cocina'])(async () => {
   const ordenes = await prisma.orden.findMany({
-    include: { detalles: true, mesa: true, cliente: true, mozo: true }
-  });
+  include: { 
+    detalles: {
+      include: {
+        plato: true  // ✅ Para mostrar nombres en la lista también
+      }
+    }, 
+    mesa: true, 
+    cliente: true, 
+    mozo: true 
+  }
+});
   return NextResponse.json(ordenes);
 });
 
